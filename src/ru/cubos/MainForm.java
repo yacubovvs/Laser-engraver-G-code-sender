@@ -36,15 +36,28 @@ public class MainForm extends JFrame implements SerialPortReader {
 
 
 
-        connectButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                serialConnector = new SerialConnector("/dev/ttyUSB0", 115200, MainForm.this);
+        connectButton.addActionListener(actionEvent -> {
+
+            if(serialConnector==null) {
+                String serialPortName = "/dev/ttyUSB0";
+                int serialPortSpeed = 115200;
+
+                printToConsoleString("Connecting to " + serialPortName + " boundrate:" + serialPortSpeed);
+                serialConnector = new SerialConnector(serialPortName, serialPortSpeed, MainForm.this);
                 try {
                     serialConnector.connect();
                 } catch (SerialPortException e) {
                     e.printStackTrace();
+                    printToConsoleString("Connecting failed");
+                    serialConnector.disconnect();
+                    serialConnector = null;
+                    connectButton.setText("Connect");
                 }
+                connectButton.setText("Disconnect");
+            }else{
+                serialConnector.disconnect();
+                serialConnector = null;
+                connectButton.setText("Connect");
             }
         });
 

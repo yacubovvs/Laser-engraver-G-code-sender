@@ -8,7 +8,6 @@ public class Main {
 
     public Main(){
         MainForm mainForm = new MainForm();
-        mainForm.printToConsoleString("App start");
     }
 
 

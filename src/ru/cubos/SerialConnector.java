@@ -13,6 +13,16 @@ public class SerialConnector {
     int serialPortSpeed = 115200;
     SerialPortReader serialPortReader;
 
+    public void disconnect(){
+        try {
+            serialPort.closePort();
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+        }
+        serialPort = null;
+        serialPortReader = null;
+    }
+
     public SerialConnector(String serialPortName, int serialPortSpeed, SerialPortReader serialPortReader){
         this.serialPortName = serialPortName;
         this.serialPortSpeed = serialPortSpeed;
@@ -25,7 +35,6 @@ public class SerialConnector {
         public void serialEvent(SerialPortEvent event) {
             if(event.isRXCHAR() && event.getEventValue() > 0){
                 try {
-                    //byte data[] = serialPort.readBytes(event.getEventValue());
                     String string = serialPort.readString();
                     serialPortReader.onSerialPortRead(string);
                 }
@@ -54,27 +63,7 @@ public class SerialConnector {
 
     public boolean sendToPort(String string) {
         try {
-
             serialPort.writeString(string + "\n");
-            /*
-            byte data_out[] = new byte[data.length];
-            for(int i=0; i<data.length; i++){
-                data_out[i] = (byte)(data[i] + 128);
-            }
-            serialPort.writeBytes(data_out);
-            */
-
-            /*
-            for(int i=0; i<data.length; i++){
-                serialPort.writeByte((byte)(data[i]+128));
-
-                if( (sendSerialDelay>0) && (i%64==0 || i==data.length) )
-                try {
-                    Thread.sleep(sendSerialDelay);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }*/
         } catch (SerialPortException e) {
             e.printStackTrace();
         }
