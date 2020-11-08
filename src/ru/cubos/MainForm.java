@@ -7,6 +7,7 @@ import ru.cubos.customViews.SerialPortReader;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -48,6 +49,10 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JSpinner spinner6;
     private JSpinner spinner7;
     private JSpinner spinner8;
+    private JScrollPane ImageFormPanelWrapper;
+    private JSplitPane menuSplit;
+    private JSplitPane splitTerminalImage;
+
 
     private SerialConnector serialConnector;
 
@@ -110,6 +115,26 @@ public class MainForm extends JFrame implements SerialPortReader {
 
         updateComboBoxComPorts();
         createWindowMenu();
+
+        // On resize
+        this.getRootPane().addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                resizeSplitMenu();
+                resizeSplitTerminal();
+            }
+        });
+        resizeSplitMenu();
+        resizeSplitTerminal();
+
+        this.validate();
+    }
+
+    void resizeSplitMenu(){
+        menuSplit.setDividerLocation(MainForm.this.getWidth() - 440);
+    }
+
+    void resizeSplitTerminal(){
+        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - 240);
     }
 
     private void createWindowMenu(){
@@ -169,6 +194,10 @@ public class MainForm extends JFrame implements SerialPortReader {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        formImagePanel.setBorder(new EmptyBorder(50,50,50,50));
+
+        this.validate();
 
     }
 }
