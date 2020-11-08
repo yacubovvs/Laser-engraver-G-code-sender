@@ -1,13 +1,17 @@
 package ru.cubos;
 
 import jssc.SerialPortException;
+import jssc.SerialPortList;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class MainForm extends JFrame implements SerialPortReader {
     private JPanel mainpanel;
@@ -22,7 +26,28 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton sendButton;
     private JButton clearButton;
     private JButton connectButton;
-    private JComboBox comboBox1;
+    private JComboBox comboBoxComPorts;
+    private JButton updateButton;
+    private JProgressBar progressBar1;
+    private JPanel formImagePanel;
+    private JSpinner spinner1;
+    private JSpinner spinner2;
+    private JButton resetHomeButton;
+    private JButton calibrationButton;
+    private JButton toHomeButton;
+    private JButton ONButton;
+    private JButton OFFButton;
+    private JButton startButton;
+    private JButton pauseButton;
+    private JButton stopButton;
+    private JButton runButton;
+    private JSpinner spinner3;
+    private JSlider slider1;
+    private JSpinner spinner4;
+    private JSpinner spinner5;
+    private JSpinner spinner6;
+    private JSpinner spinner7;
+    private JSpinner spinner8;
 
     private SerialConnector serialConnector;
 
@@ -76,6 +101,44 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                updateComboBoxComPorts();
+            }
+        });
+
+        updateComboBoxComPorts();
+        createWindowMenu();
+    }
+
+    private void createWindowMenu(){
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(createFileMenu());
+        setJMenuBar(menuBar);
+
+        this.validate();
+    }
+
+    private JMenu createFileMenu()
+    {
+        JMenu file = new JMenu("Файл");
+        //JMenuItem open = new JMenuItem("Открыть", new ImageIcon("images/open.png"));
+        JMenuItem open = new JMenuItem("Open");
+        JMenuItem saveGCode = new JMenuItem("Save G-code");
+        JMenuItem exit = new JMenuItem("Exit");
+        file.add(open);
+        file.add(saveGCode);
+        file.addSeparator();
+        file.add(exit);
+        open.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                System.out.println ("ActionListener.actionPerformed : open");
+            }
+        });
+        return file;
     }
 
     public void printToConsoleString(String string){
@@ -86,5 +149,26 @@ public class MainForm extends JFrame implements SerialPortReader {
     @Override
     public void onSerialPortRead(String data) {
         printToConsoleString(data);
+    }
+
+    void updateComboBoxComPorts(){
+        String[] portNames = SerialPortList.getPortNames();
+        comboBoxComPorts.removeAllItems();
+        for(String portName: portNames){
+            comboBoxComPorts.addItem(portName);
+        }
+    }
+
+    private void createUIComponents() {
+        formImagePanel = new ImagePanel();
+
+        File img = new File("images/test_pcb.png");
+        try {
+            BufferedImage image = ImageIO.read(img );
+            ((ImagePanel)formImagePanel).setImage(image);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }
