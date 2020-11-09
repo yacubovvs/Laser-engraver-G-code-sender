@@ -13,6 +13,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainForm extends JFrame implements SerialPortReader {
     private JPanel mainpanel;
@@ -21,7 +23,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton xPlusButton;
     private JButton xMinusButton;
     private JButton zPlusButton;
-    private JButton zMinusButton1;
+    private JButton zMinusButton;
     private JTextArea ConsoleField;
     private JTextField InputCommandField;
     private JButton sendButton;
@@ -53,6 +55,10 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JSplitPane menuSplit;
     private JSplitPane splitTerminalImage;
     private JComboBox comboBoxBoundrate;
+    private JButton steppersOffButton;
+    private JButton resetXYButton;
+    private JButton resetZButton;
+    private JButton reinitButton;
 
 
     private SerialConnector serialConnector;
@@ -64,7 +70,6 @@ public class MainForm extends JFrame implements SerialPortReader {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(new Dimension(800,400));
 
-
         setFormEvents();
         updateComboBoxCom_Ports();
         updateComboBoxBoundrate();
@@ -73,65 +78,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         resizeSplitTerminal();
 
         setVisible(true);
-    }
-
-    void resizeSplitMenu(){
-        menuSplit.setDividerLocation(MainForm.this.getWidth() - 440);
-    }
-
-    void resizeSplitTerminal(){
-        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - 240);
-    }
-
-    private void createWindowMenu(){
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(createFileMenu());
-        setJMenuBar(menuBar);
-
-        this.validate();
-    }
-
-    private JMenu createFileMenu()
-    {
-        JMenu file = new JMenu("Файл");
-        //JMenuItem open = new JMenuItem("Открыть", new ImageIcon("images/open.png"));
-        JMenuItem open = new JMenuItem("Open");
-        JMenuItem saveGCode = new JMenuItem("Save G-code");
-        JMenuItem exit = new JMenuItem("Exit");
-        file.add(open);
-        file.add(saveGCode);
-        file.addSeparator();
-        file.add(exit);
-        open.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent arg0) {
-                System.out.println ("ActionListener.actionPerformed : open");
-            }
-        });
-        return file;
-    }
-
-    @Override
-    public void onSerialPortRead(String data) {
-        printToConsoleString(data);
-    }
-
-    private void createUIComponents() {
-        formImagePanel = new ImagePanel();
-
-        File img = new File("images/test_pcb.png");
-        try {
-            BufferedImage image = ImageIO.read(img );
-            ((ImagePanel)formImagePanel).setImage(image);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        formImagePanel.setBorder(new EmptyBorder(50,50,50,50));
-
-        this.validate();
-
+        startCommandsDaemon();
     }
 
     /*
@@ -218,6 +165,12 @@ public class MainForm extends JFrame implements SerialPortReader {
         connectButton.setText("Connect");
     }
 
+    @Override
+    public void onSerialPortRead(String data) {
+        printToConsoleString(data);
+        lastSerialAnswer = data;
+    }
+
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #                                              SERIAL PORT  -                                               #
@@ -226,9 +179,63 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    #                                              FORM EVENTS  +                                               #
+    #                                        FORM EVENTS AND ACTION  +                                          #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
+
+    void resizeSplitMenu(){
+        menuSplit.setDividerLocation(MainForm.this.getWidth() - 440);
+    }
+
+    void resizeSplitTerminal(){
+        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - 240);
+    }
+
+    private void createWindowMenu(){
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(createFileMenu());
+        setJMenuBar(menuBar);
+
+        this.validate();
+    }
+
+    private JMenu createFileMenu()
+    {
+        JMenu file = new JMenu("Файл");
+        //JMenuItem open = new JMenuItem("Открыть", new ImageIcon("images/open.png"));
+        JMenuItem open = new JMenuItem("Open");
+        JMenuItem saveGCode = new JMenuItem("Save G-code");
+        JMenuItem exit = new JMenuItem("Exit");
+        file.add(open);
+        file.add(saveGCode);
+        file.addSeparator();
+        file.add(exit);
+        open.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                System.out.println ("ActionListener.actionPerformed : open");
+            }
+        });
+        return file;
+    }
+
+    private void createUIComponents() {
+        formImagePanel = new ImagePanel();
+
+        File img = new File("images/test_pcb.png");
+        try {
+            BufferedImage image = ImageIO.read(img );
+            ((ImagePanel)formImagePanel).setImage(image);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        formImagePanel.setBorder(new EmptyBorder(50,50,50,50));
+
+        this.validate();
+
+    }
 
     private void setFormEvents(){
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -260,6 +267,42 @@ public class MainForm extends JFrame implements SerialPortReader {
         xPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 X" + xy_step_moving + " F10000");
+            }
+        });
+
+        xMinusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 X-" + xy_step_moving + " F10000");
+            }
+        });
+
+        yPlusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 Y" + xy_step_moving + " F10000");
+            }
+        });
+
+        yMinusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 Y-" + xy_step_moving + " F10000");
+            }
+        });
+
+        zPlusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 Z" + z_step_moving + " F10000");
+            }
+        });
+
+        zMinusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommandWithM18("G1 Z-" + z_step_moving + " F10000");
             }
         });
 
@@ -278,11 +321,26 @@ public class MainForm extends JFrame implements SerialPortReader {
                 updateComboBoxCom_Ports();
             }
         });
+
+        calibrationButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommand("G28");
+            }
+        });
+
+        reinitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                sendCommand("G91");
+                prepareCommand("M18");
+            }
+        });
     }
 
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    #                                              FORM EVENTS  -                                               #
+    #                                        FORM EVENTS AND ACTIONS -                                          #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
@@ -297,7 +355,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     private double z_laser_position = 0;
 
     private double xy_step_moving = 20;
-    private double z_step_moving = 20;
+    private double z_step_moving = 5;
 
     private void moveFromSpindlePosition(double x, double y, double z){
 
@@ -312,4 +370,67 @@ public class MainForm extends JFrame implements SerialPortReader {
     #                                      SPINDLE MOVING AND POSITION -                                        #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                           COMMANDS SENDING +                                              #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private List<String> globalCommandsList = new ArrayList<>();
+    private String lastSerialAnswer = "";
+
+    private void startCommandsDaemon(){
+        Thread daemonThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true){
+                    if(lastSerialAnswer!=null && globalCommandsList.size()>0){
+                        //has device answer
+                        if(lastSerialAnswer.trim().equals("ok")){
+                            // run next command
+                            lastSerialAnswer = null;
+                            sendCommand(globalCommandsList.get(0));
+                            globalCommandsList.remove(0);
+                        }else{
+                        }
+                    }
+
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        daemonThread.start();
+    }
+
+    private void prepareCommands(List<String> commandsList){
+        for(String command: commandsList) globalCommandsList.add(command);
+    }
+
+    private void prepareCommand(String command){
+        globalCommandsList.add(command);
+    }
+
+    private void prepareCommandWithM18(String command){
+        globalCommandsList.add(command);
+        globalCommandsList.add("M18");
+    }
+
+    void sendCommand(String command){
+        printToConsoleString(command);
+        serialConnector.sendToPort(command);
+    }
+
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                           COMMANDS SENDING -                                              #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
 }
