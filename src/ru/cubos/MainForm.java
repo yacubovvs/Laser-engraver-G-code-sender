@@ -52,6 +52,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JScrollPane ImageFormPanelWrapper;
     private JSplitPane menuSplit;
     private JSplitPane splitTerminalImage;
+    private JComboBox comboBoxBoundrate;
 
 
     private SerialConnector serialConnector;
@@ -62,71 +63,16 @@ public class MainForm extends JFrame implements SerialPortReader {
         setTitle("Laser G-code sender");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(new Dimension(800,400));
-        setVisible(true);
 
 
-
-        connectButton.addActionListener(actionEvent -> {
-
-            if(serialConnector==null) {
-                String serialPortName = "/dev/ttyUSB0";
-                int serialPortSpeed = 115200;
-
-                printToConsoleString("Connecting to " + serialPortName + " boundrate:" + serialPortSpeed);
-                serialConnector = new SerialConnector(serialPortName, serialPortSpeed, MainForm.this);
-                try {
-                    serialConnector.connect();
-                } catch (SerialPortException e) {
-                    e.printStackTrace();
-                    printToConsoleString("Connecting failed");
-                    serialConnector.disconnect();
-                    serialConnector = null;
-                    connectButton.setText("Connect");
-                }
-                connectButton.setText("Disconnect");
-            }else{
-                serialConnector.disconnect();
-                serialConnector = null;
-                connectButton.setText("Connect");
-            }
-        });
-
-        xPlusButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-            }
-        });
-
-        sendButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                printToConsoleString(InputCommandField.getText());
-                serialConnector.sendToPort(InputCommandField.getText());
-                InputCommandField.setText("");
-            }
-        });
-
-        updateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                updateComboBoxComPorts();
-            }
-        });
-
-        updateComboBoxComPorts();
+        setFormEvents();
+        updateComboBoxCom_Ports();
+        updateComboBoxBoundrate();
         createWindowMenu();
-
-        // On resize
-        this.getRootPane().addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
-                resizeSplitMenu();
-                resizeSplitTerminal();
-            }
-        });
         resizeSplitMenu();
         resizeSplitTerminal();
 
-        this.validate();
+        setVisible(true);
     }
 
     void resizeSplitMenu(){
@@ -166,22 +112,9 @@ public class MainForm extends JFrame implements SerialPortReader {
         return file;
     }
 
-    public void printToConsoleString(String string){
-        ConsoleField.setText(ConsoleField.getText() + string + "\n");
-    }
-
-
     @Override
     public void onSerialPortRead(String data) {
         printToConsoleString(data);
-    }
-
-    void updateComboBoxComPorts(){
-        String[] portNames = SerialPortList.getPortNames();
-        comboBoxComPorts.removeAllItems();
-        for(String portName: portNames){
-            comboBoxComPorts.addItem(portName);
-        }
     }
 
     private void createUIComponents() {
@@ -200,4 +133,183 @@ public class MainForm extends JFrame implements SerialPortReader {
         this.validate();
 
     }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                         SETTING ELEMENTS VIEW  +                                          #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    void updateComboBoxCom_Ports(){
+        String[] portNames = SerialPortList.getPortNames();
+        comboBoxComPorts.removeAllItems();
+        for(String portName: portNames){
+            comboBoxComPorts.addItem(portName);
+        }
+    }
+
+    void updateComboBoxBoundrate(){
+        comboBoxBoundrate.removeAllItems();
+        //comboBoxBoundrate.addItem("1000000");
+        comboBoxBoundrate.addItem("500000");
+        //comboBoxBoundrate.addItem("250000");
+        comboBoxBoundrate.addItem("230400");
+        comboBoxBoundrate.addItem("115200");
+        //comboBoxBoundrate.addItem("74880");
+        comboBoxBoundrate.addItem("57600");
+        //comboBoxBoundrate.addItem("38400");
+        //comboBoxBoundrate.addItem("19200");
+        comboBoxBoundrate.addItem("9600");
+        comboBoxBoundrate.addItem("4800");
+        //comboBoxBoundrate.addItem("2400");
+        //comboBoxBoundrate.addItem("1200");
+        comboBoxBoundrate.addItem("300");
+        comboBoxBoundrate.setSelectedIndex(2);
+    }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                         SETTING ELEMENTS VIEW  -                                          #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                CONSOLE  +                                                 #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    public void printToConsoleString(String string){
+        ConsoleField.setText(ConsoleField.getText() + string + "\n");
+    }
+
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                CONSOLE  -                                                 #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                              SERIAL PORT  +                                               #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private void connectToSerialPort(String serialPort, int boundrate){
+        printToConsoleString("Connecting to " + serialPort + " boundrate:" + boundrate);
+        serialConnector = new SerialConnector(serialPort, boundrate, MainForm.this);
+        try {
+            serialConnector.connect();
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+            printToConsoleString("Connecting failed");
+            serialConnector.disconnect();
+            serialConnector = null;
+            connectButton.setText("Connect");
+        }
+        connectButton.setText("Disconnect");
+    }
+
+    private void disconnectFromSerialPort(){
+        serialConnector.disconnect();
+        serialConnector = null;
+        connectButton.setText("Connect");
+    }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                              SERIAL PORT  -                                               #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                              FORM EVENTS  +                                               #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private void setFormEvents(){
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # Form listeners
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        this.getRootPane().addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                resizeSplitMenu();
+                resizeSplitTerminal();
+            }
+        });
+
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # Serial port connect listener
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        connectButton.addActionListener(actionEvent -> {
+            if(serialConnector==null) {
+                String serialPortName = comboBoxComPorts.getSelectedItem().toString(); //"/dev/ttyUSB0";
+                connectToSerialPort(serialPortName, 115200);
+            }else{
+                disconnectFromSerialPort();
+            }
+        });
+
+
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # MOVING BUTTON LISTENERS
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        xPlusButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+            }
+        });
+
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                printToConsoleString(InputCommandField.getText());
+                serialConnector.sendToPort(InputCommandField.getText());
+                InputCommandField.setText("");
+            }
+        });
+
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                updateComboBoxCom_Ports();
+            }
+        });
+    }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                              FORM EVENTS  -                                               #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                      SPINDLE MOVING AND POSITION +                                        #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private double x_laser_position = 0;
+    private double y_laser_position = 0;
+    private double z_laser_position = 0;
+
+    private double xy_step_moving = 20;
+    private double z_step_moving = 20;
+
+    private void moveFromSpindlePosition(double x, double y, double z){
+
+    }
+
+    private void moveSpindleAbsolute(double x, double y, double z){
+
+    }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                      SPINDLE MOVING AND POSITION -                                        #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
 }
