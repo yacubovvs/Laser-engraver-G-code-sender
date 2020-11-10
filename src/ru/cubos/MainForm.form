@@ -8,7 +8,7 @@
     <properties/>
     <border type="none"/>
     <children>
-      <splitpane id="ec608" binding="menuSplit">
+      <splitpane id="ec608" binding="menuSplit" custom-create="true">
         <constraints>
           <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
             <preferred-size width="200" height="200"/>
@@ -71,7 +71,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <splitpane id="f98e3" binding="splitTerminalImage">
+                  <splitpane id="f98e3" binding="splitTerminalImage" custom-create="true">
                     <constraints>
                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                         <preferred-size width="200" height="200"/>

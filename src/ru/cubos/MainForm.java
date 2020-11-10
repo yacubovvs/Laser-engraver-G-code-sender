@@ -2,6 +2,7 @@ package ru.cubos;
 
 import jssc.SerialPortException;
 import jssc.SerialPortList;
+import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
 
@@ -183,12 +184,15 @@ public class MainForm extends JFrame implements SerialPortReader {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
+    int menuSplitDividerLocatiom = 440;
+    int menuSplitTerminalLocatiom = 240;
+
     void resizeSplitMenu(){
-        menuSplit.setDividerLocation(MainForm.this.getWidth() - 440);
+        menuSplit.setDividerLocation(MainForm.this.getWidth() - menuSplitDividerLocatiom);
     }
 
     void resizeSplitTerminal(){
-        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - 240);
+        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - menuSplitTerminalLocatiom);
     }
 
     private void createWindowMenu(){
@@ -221,6 +225,18 @@ public class MainForm extends JFrame implements SerialPortReader {
     }
 
     private void createUIComponents() {
+
+        splitTerminalImage = new CustomJSplitPane() {
+            public void onDeviderMove(int deviderLocation){
+                return;
+            }
+        };
+        menuSplit = new CustomJSplitPane() {
+            public void onDeviderMove(int deviderLocation){
+                return;
+            }
+        };
+
         formImagePanel = new ImagePanel();
 
         File img = new File("images/test_pcb.png");
@@ -336,6 +352,8 @@ public class MainForm extends JFrame implements SerialPortReader {
                 prepareCommand("M18");
             }
         });
+
+
     }
 
     /*
