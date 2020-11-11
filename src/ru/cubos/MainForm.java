@@ -184,15 +184,15 @@ public class MainForm extends JFrame implements SerialPortReader {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
-    int menuSplitDividerLocatiom = 440;
-    int menuSplitTerminalLocatiom = 240;
+    int menuSplitDividerLocatiom = 380;
+    int imageSplitTerminalLocatiom = 240;
 
     void resizeSplitMenu(){
         menuSplit.setDividerLocation(MainForm.this.getWidth() - menuSplitDividerLocatiom);
     }
 
     void resizeSplitTerminal(){
-        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - menuSplitTerminalLocatiom);
+        splitTerminalImage.setDividerLocation(MainForm.this.getHeight() - imageSplitTerminalLocatiom);
     }
 
     private void createWindowMenu(){
@@ -228,12 +228,15 @@ public class MainForm extends JFrame implements SerialPortReader {
 
         splitTerminalImage = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
+                int form_height = MainForm.this.getHeight();
+                if(form_height!=0){ MainForm.this.imageSplitTerminalLocatiom = form_height - deviderLocation; }
                 return;
             }
         };
         menuSplit = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
-                return;
+                int form_width = MainForm.this.getWidth();
+                if(form_width!=0){ MainForm.this.menuSplitDividerLocatiom = form_width - deviderLocation; }
             }
         };
 
@@ -353,7 +356,45 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # TERMINAL LISTENERS
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                ConsoleField.setText("");
+            }
+        });
+
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                printToConsoleString(InputCommandField.getText());
+                serialConnector.sendToPort(InputCommandField.getText());
+                InputCommandField.setText("");
+            }
+        });
+
+        InputCommandField.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent keyEvent) {
+                if(keyEvent.getKeyChar() == '\n'){
+                    sendButton.doClick();
+                }
+                return;
+            }
+
+            @Override
+            public void keyPressed(KeyEvent keyEvent) {
+                return;
+            }
+
+            @Override
+            public void keyReleased(KeyEvent keyEvent) {
+                return;
+            }
+        });
     }
 
     /*
