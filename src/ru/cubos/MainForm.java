@@ -39,8 +39,8 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton resetHomeButton;
     private JButton calibrationButton;
     private JButton toHomeButton;
-    private JButton ONButton;
-    private JButton OFFButton;
+    private JButton ONLaserButton;
+    private JButton OFFLaserButton;
     private JButton startButton;
     private JButton pauseButton;
     private JButton stopButton;
@@ -286,42 +286,42 @@ public class MainForm extends JFrame implements SerialPortReader {
         xPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 X" + xy_step_moving + " F10000");
+                prepareCommand("G1 X" + xy_step_moving + " F10000");
             }
         });
 
         xMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 X-" + xy_step_moving + " F10000");
+                prepareCommand("G1 X-" + xy_step_moving + " F10000");
             }
         });
 
         yPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 Y" + xy_step_moving + " F10000");
+                prepareCommand("G1 Y" + xy_step_moving + " F10000");
             }
         });
 
         yMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 Y-" + xy_step_moving + " F10000");
+                prepareCommand("G1 Y-" + xy_step_moving + " F10000");
             }
         });
 
         zPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 Z" + z_step_moving + " F10000");
+                prepareCommand("G1 Z" + z_step_moving + " F10000");
             }
         });
 
         zMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommandWithM18("G1 Z-" + z_step_moving + " F10000");
+                prepareCommand("G1 Z-" + z_step_moving + " F10000");
             }
         });
 
@@ -352,7 +352,20 @@ public class MainForm extends JFrame implements SerialPortReader {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 sendCommand("G91");
-                prepareCommand("M18");
+            }
+        });
+
+        ONLaserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                sendCommand("M104 S200");
+            }
+        });
+
+        OFFLaserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                sendCommand("M104 S0");
             }
         });
 
@@ -473,11 +486,6 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     private void prepareCommand(String command){
         globalCommandsList.add(command);
-    }
-
-    private void prepareCommandWithM18(String command){
-        globalCommandsList.add(command);
-        globalCommandsList.add("M18");
     }
 
     void sendCommand(String command){
