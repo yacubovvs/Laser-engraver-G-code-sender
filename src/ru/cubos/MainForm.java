@@ -14,6 +14,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,6 +65,9 @@ public class MainForm extends JFrame implements SerialPortReader {
 
 
     private SerialConnector serialConnector;
+
+    private List<String> commandHistoryList = new ArrayList();
+    private int currentHistoryPosition = -1;
 
     public MainForm(){
 
@@ -124,6 +129,32 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                DIALOGS  +                                                 #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+    private BufferedImage chooseImage() throws IOException {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.showOpenDialog(this);
+        Path file = fileChooser.getSelectedFile().toPath();
+        //Icon imageIcon = new ImageIcon(file.toUri().toURL());
+        //setSize(imageIcon.getIconWidth(), imageIcon.getIconHeight() + 100);
+
+        BufferedImage image = null;
+        image = ImageIO.read(file.toFile());
+        return image;
+
+        //String decodeText = getDecodeText(file);
+        //textArea.setText(decodeText);
+    }
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                DIALOGS  +                                                 #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #                                                CONSOLE  +                                                 #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
@@ -132,6 +163,14 @@ public class MainForm extends JFrame implements SerialPortReader {
         ConsoleField.setText(ConsoleField.getText() + string + "\n");
     }
 
+    private void addCommandToCommandHistory(String command) {
+        commandHistoryList.add(command);
+        if(commandHistoryList.size()>=100){
+            commandHistoryList.remove(0);
+        }
+
+        currentHistoryPosition = -1;
+    }
 
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -218,25 +257,39 @@ public class MainForm extends JFrame implements SerialPortReader {
         {
             @Override
             public void actionPerformed(ActionEvent arg0) {
-                System.out.println ("ActionListener.actionPerformed : open");
+                try {
+                    ((ImagePanel)formImagePanel).setImage(chooseImage());
+                    MainForm.this.repaint();
+                }catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
         return file;
     }
 
+    int form_width_last = 0;
+    int form_height_last = 0;
     private void createUIComponents() {
 
         splitTerminalImage = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
                 int form_height = MainForm.this.getHeight();
-                if(form_height!=0){ MainForm.this.imageSplitTerminalLocatiom = form_height - deviderLocation; }
-                return;
+                if(form_height!=0 && form_height_last == form_height){
+                    MainForm.this.imageSplitTerminalLocatiom = form_height - deviderLocation;
+                }
+
+                form_height_last = form_height;
             }
         };
         menuSplit = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
                 int form_width = MainForm.this.getWidth();
-                if(form_width!=0){ MainForm.this.menuSplitDividerLocatiom = form_width - deviderLocation; }
+                if(form_width!=0 && form_width_last == form_width){
+                    MainForm.this.menuSplitDividerLocatiom = form_width - deviderLocation;
+                }
+
+                form_width_last = form_width;
             }
         };
 
@@ -264,6 +317,7 @@ public class MainForm extends JFrame implements SerialPortReader {
             public void componentResized(ComponentEvent e) {
                 resizeSplitMenu();
                 resizeSplitTerminal();
+                //System.out.println("Resize " + MainForm.this.getWidth());
             }
         });
 
@@ -328,9 +382,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                printToConsoleString(InputCommandField.getText());
-                serialConnector.sendToPort(InputCommandField.getText());
-                InputCommandField.setText("");
+                sendCommand_Form();
             }
         });
 
@@ -380,26 +432,26 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
-        sendButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                printToConsoleString(InputCommandField.getText());
-                serialConnector.sendToPort(InputCommandField.getText());
-                InputCommandField.setText("");
-            }
-        });
-
         InputCommandField.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent keyEvent) {
                 if(keyEvent.getKeyChar() == '\n'){
-                    sendButton.doClick();
+                    sendCommand_Form();
                 }
                 return;
             }
 
             @Override
             public void keyPressed(KeyEvent keyEvent) {
+                if(keyEvent.getKeyText(keyEvent.getKeyCode()).equals("Up")){
+                    setCommandFromHistory_From(currentHistoryPosition+1);
+                }else if(keyEvent.getKeyText(keyEvent.getKeyCode()).equals("Down")){
+                    setCommandFromHistory_From(currentHistoryPosition-1);
+                }else if(keyEvent.getKeyText(keyEvent.getKeyCode()).equals("Backspace")){
+                    if(InputCommandField.getText().length()==1){
+                        currentHistoryPosition = -1;
+                    }
+                }
                 return;
             }
 
@@ -448,6 +500,39 @@ public class MainForm extends JFrame implements SerialPortReader {
     #                                           COMMANDS SENDING +                                              #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
+
+    void setCommandFromHistory_From(int history_num){
+        this.currentHistoryPosition = history_num;
+        if(commandHistoryList.size()==0){
+            currentHistoryPosition = 1;
+            return;
+        }else if(history_num>=commandHistoryList.size()) {
+            currentHistoryPosition = commandHistoryList.size()-1;
+        }else if(currentHistoryPosition<=-1){
+            InputCommandField.setText("");
+            currentHistoryPosition=-1;
+            return;
+        }
+
+        InputCommandField.setText(commandHistoryList.get(commandHistoryList.size()- 1 - currentHistoryPosition));
+    }
+
+    private void sendCommand_Form(){
+        String command = InputCommandField.getText();
+        InputCommandField.setText("");
+
+        printToConsoleString(command);
+        if(!command.trim().equals("")) addCommandToCommandHistory(command);
+
+        try{
+            serialConnector.sendToPort(command);
+        }catch(Exception e){
+            printToConsoleString("--- ERROR: sending command error");
+            if(serialConnector==null) printToConsoleString("--- serial port is not connected");
+
+        }
+
+    }
 
     private List<String> globalCommandsList = new ArrayList<>();
     private String lastSerialAnswer = "";
