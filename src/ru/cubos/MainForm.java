@@ -62,6 +62,9 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton resetXYButton;
     private JButton resetZButton;
     private JButton reinitButton;
+    private JTextField textField1;
+    private JTextField textField2;
+    private JSlider slider2;
 
 
     private SerialConnector serialConnector;
