@@ -5,18 +5,22 @@ import jssc.SerialPortList;
 import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
+import ru.cubos.customViews.Status;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
 
 public class MainForm extends JFrame implements SerialPortReader {
@@ -36,8 +40,8 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton updateButton;
     private JProgressBar progressBar1;
     private JPanel formImagePanel;
-    private JSpinner spinner1;
-    private JSpinner spinner2;
+    private JSpinner XYstep_val;
+    private JSpinner Zstep_val;
     private JButton resetHomeButton;
     private JButton calibrationButton;
     private JButton toHomeButton;
@@ -49,9 +53,9 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton runButton;
     private JSpinner spinner3;
     private JSlider slider1;
-    private JSpinner spinner4;
-    private JSpinner spinner5;
-    private JSpinner spinner6;
+    private JSpinner laserWidth;
+    private JSpinner laser_travelSpeed_input;
+    private JSpinner laser_burnSpeed_input;
     private JSpinner spinner7;
     private JSpinner spinner8;
     private JScrollPane ImageFormPanelWrapper;
@@ -62,9 +66,11 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton resetXYButton;
     private JButton resetZButton;
     private JButton reinitButton;
-    private JTextField textField1;
-    private JTextField textField2;
-    private JSlider slider2;
+    private JSpinner LaserMaxPower_input;
+    private JSpinner LaserMinPower_input;
+    private JSlider LaserPowerPercent_sliderslider;
+    private JLabel laserPower_percent_label;
+    private JLabel LaserStatusLabel;
 
 
     private SerialConnector serialConnector;
@@ -72,7 +78,13 @@ public class MainForm extends JFrame implements SerialPortReader {
     private List<String> commandHistoryList = new ArrayList();
     private int currentHistoryPosition = -1;
 
+    private Settings settings;
+    private Status status;
+
     public MainForm(){
+
+        settings = new Settings();
+        status = new Status();
 
         setContentPane(mainpanel);
         setTitle("Laser G-code sender");
@@ -86,8 +98,11 @@ public class MainForm extends JFrame implements SerialPortReader {
         resizeSplitMenu();
         resizeSplitTerminal();
 
-        setVisible(true);
         startCommandsDaemon();
+        loadFromSettings(settings);
+        setFormStyle();
+
+        setVisible(true);
     }
 
     /*
@@ -312,6 +327,23 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     }
 
+    private void setFormStyle(){
+
+
+        Dictionary<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
+        labels.put(0, new JLabel("<html><font color=#00AA00 size=3>0"));
+        labels.put(25, new JLabel("<html><font color=gray size=3>25"));
+        labels.put(50, new JLabel("<html><font color=gray size=3>50"));
+        labels.put(75, new JLabel("<html><font color=gray size=3>75"));
+        labels.put(100, new JLabel("<html><font color=#AA0000 size=3>100"));
+
+        LaserPowerPercent_sliderslider.setPaintLabels(true);
+        LaserPowerPercent_sliderslider.setPaintTrack(true);
+        LaserPowerPercent_sliderslider.setPaintTicks(true);
+        LaserPowerPercent_sliderslider.setLabelTable(labels);
+
+    }
+
     private void setFormEvents(){
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # Form listeners
@@ -324,18 +356,79 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
+        LaserPowerPercent_sliderslider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent changeEvent) {
+                status.setLaserPower(LaserPowerPercent_sliderslider.getValue());
+                setCurrentLaserPower();
+                return;
+            }
+        });
+
+        KeyListener settingsChangeKeyListener  = new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent keyEvent) {
+
+            }
+
+            @Override
+            public void keyPressed(KeyEvent keyEvent) {
+
+            }
+
+            @Override
+            public void keyReleased(KeyEvent keyEvent) {
+                saveToSettings(settings);
+            }
+        };
+
+        ChangeListener changeListener = new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent changeEvent) {
+                saveToSettings(settings);
+            }
+        };
+
+        LaserMaxPower_input.addChangeListener(changeListener);
+        LaserMinPower_input.addChangeListener(changeListener);
+        laserWidth.addChangeListener(changeListener);
+        laser_burnSpeed_input.addChangeListener(changeListener);
+        laser_travelSpeed_input.addChangeListener(changeListener);
+        Zstep_val.addChangeListener(changeListener);
+        XYstep_val.addChangeListener(changeListener);
+        laser_burnSpeed_input.addChangeListener(changeListener);;
+
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # Serial port connect listener
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         connectButton.addActionListener(actionEvent -> {
             if(serialConnector==null) {
                 String serialPortName = comboBoxComPorts.getSelectedItem().toString(); //"/dev/ttyUSB0";
-                connectToSerialPort(serialPortName, 115200);
+                connectToSerialPort(serialPortName, Common.hardParseInt(comboBoxBoundrate.getSelectedItem().toString()));
             }else{
                 disconnectFromSerialPort();
             }
         });
 
+
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # Laser
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        ONLaserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                status.setLaserOn(true);
+                setCurrentLaserPower();
+            }
+        });
+
+        OFFLaserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                status.setLaserOn(false);
+                setCurrentLaserPower();
+            }
+        });
 
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # MOVING BUTTON LISTENERS
@@ -410,19 +503,6 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
-        ONLaserButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                sendCommand("M104 S200");
-            }
-        });
-
-        OFFLaserButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                sendCommand("M104 S0");
-            }
-        });
 
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # TERMINAL LISTENERS
@@ -578,14 +658,66 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     void sendCommand(String command){
         printToConsoleString(command);
-        serialConnector.sendToPort(command);
+        if(serialConnector==null){
+            printToConsoleString("-- Error: Serial port disconnected");
+        }else{
+            serialConnector.sendToPort(command);
+        }
+
     }
 
 
+    private void setCurrentLaserPower() {
+        laserPower_percent_label.setText("" + status.getCurrentLaserPowerAbsolute(settings));
+
+        if(status.getCurrentLaserPowerAbsolute(settings)==0){
+            LaserStatusLabel.setText("OFF");
+        }else{
+            sendCommand("M3 S" + status.getCurrentLaserPowerAbsolute(settings));
+            LaserStatusLabel.setText("ON");
+        }
+    }
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #                                           COMMANDS SENDING -                                              #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                SETTINGS  +                                                #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private void loadFromSettings(Settings settings){
+        XYstep_val.setValue(settings.MANUAL_MOVE_XY_STEP);
+        Zstep_val.setValue(settings.MANUAL_MOVE_Z_STEP);
+
+        laserWidth.setValue(settings.LASER_WIDTH);
+        LaserMaxPower_input.setValue(settings.LASER_MAX_POWER);
+        LaserMinPower_input.setValue(settings.LASER_MIN_POWER);
+
+        laser_travelSpeed_input.setValue(settings.TRAVEL_SPEED);
+        laser_burnSpeed_input.setValue(settings.BURN_SPEED);
+    }
+
+    private void saveToSettings(Settings settings){
+        settings.MANUAL_MOVE_XY_STEP = Common.hardParseDouble(XYstep_val.getValue().toString());
+        settings.MANUAL_MOVE_Z_STEP = Common.hardParseDouble(Zstep_val.getValue().toString());
+
+        settings.LASER_WIDTH = Common.hardParseDouble(laserWidth.getValue().toString());
+        settings.LASER_MAX_POWER = Common.hardParseInt(LaserMaxPower_input.getValue().toString());
+        settings.LASER_MIN_POWER = Common.hardParseInt(LaserMinPower_input.getValue().toString());
+
+        settings.TRAVEL_SPEED = Common.hardParseInt(laser_travelSpeed_input.getValue().toString());
+        settings.BURN_SPEED = Common.hardParseInt(laser_burnSpeed_input.getValue().toString());
+
+        //setCurrentLaserPower();
+    }
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                SETTINGS  -                                                #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
 }
