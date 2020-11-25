@@ -4,7 +4,7 @@ import ru.cubos.Settings;
 
 public class Status {
     private boolean laserOn = false;
-    private int laserPower = 100;
+    private int laserPower = 0;
 
     public boolean isLaserOn() {
         return laserOn;

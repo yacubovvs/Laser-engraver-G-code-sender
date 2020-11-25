@@ -12,4 +12,6 @@ public class Settings{
     public int TRAVEL_SPEED = 100;
     public int BURN_SPEED = 50;
 
+    public double PIXEL_SIZE = 50;
+
 }

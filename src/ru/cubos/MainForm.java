@@ -71,8 +71,10 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JSlider LaserPowerPercent_sliderslider;
     private JLabel laserPower_percent_label;
     private JLabel LaserStatusLabel;
+    private JButton RecalculateKobButton;
+    private JSpinner spinner1;
 
-
+    private static int SEND_LASER_POWER_DELAY_MS = 300;
     private SerialConnector serialConnector;
 
     private List<String> commandHistoryList = new ArrayList();
@@ -91,7 +93,6 @@ public class MainForm extends JFrame implements SerialPortReader {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(new Dimension(800,400));
 
-        setFormEvents();
         updateComboBoxCom_Ports();
         updateComboBoxBoundrate();
         createWindowMenu();
@@ -102,6 +103,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         loadFromSettings(settings);
         setFormStyle();
 
+        setFormEvents();
         setVisible(true);
     }
 
@@ -344,6 +346,8 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     }
 
+    private Thread updateLaserValueThread = null;
+
     private void setFormEvents(){
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # Form listeners
@@ -359,28 +363,31 @@ public class MainForm extends JFrame implements SerialPortReader {
         LaserPowerPercent_sliderslider.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent changeEvent) {
-                status.setLaserPower(LaserPowerPercent_sliderslider.getValue());
-                setCurrentLaserPower();
+
+                if(updateLaserValueThread==null){
+                    updateLaserValueThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(SEND_LASER_POWER_DELAY_MS);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                            status.setLaserPower(LaserPowerPercent_sliderslider.getValue());
+                            setCurrentLaserPower();
+
+                            updateLaserValueThread = null;
+                        }
+                    });
+
+                    updateLaserValueThread.start();
+                }
+
+
                 return;
             }
         });
-
-        KeyListener settingsChangeKeyListener  = new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent keyEvent) {
-
-            }
-
-            @Override
-            public void keyPressed(KeyEvent keyEvent) {
-
-            }
-
-            @Override
-            public void keyReleased(KeyEvent keyEvent) {
-                saveToSettings(settings);
-            }
-        };
 
         ChangeListener changeListener = new ChangeListener() {
             @Override
@@ -426,6 +433,7 @@ public class MainForm extends JFrame implements SerialPortReader {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 status.setLaserOn(false);
+                sendCommand("M3 S0");
                 setCurrentLaserPower();
             }
         });
@@ -671,6 +679,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         laserPower_percent_label.setText("" + status.getCurrentLaserPowerAbsolute(settings));
 
         if(status.getCurrentLaserPowerAbsolute(settings)==0){
+            if(status.isLaserOn()) sendCommand("M3 S0");
             LaserStatusLabel.setText("OFF");
         }else{
             sendCommand("M3 S" + status.getCurrentLaserPowerAbsolute(settings));
