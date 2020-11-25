@@ -2,8 +2,8 @@ package ru.cubos;
 
 public class Settings{
 
-    public double MANUAL_MOVE_XY_STEP = 20;
-    public double MANUAL_MOVE_Z_STEP = 10;
+    public double MANUAL_MOVE_XY_STEP_INIT = 20;
+    public double MANUAL_MOVE_Z_STEP_INIT = 10;
 
     public int LASER_MAX_POWER = 1024;
     public int LASER_MIN_POWER = 0;
@@ -12,6 +12,6 @@ public class Settings{
     public int TRAVEL_SPEED = 100;
     public int BURN_SPEED = 50;
 
-    public double PIXEL_SIZE = 50;
+    public double PIXEL_SIZE = 100.0;
 
 }

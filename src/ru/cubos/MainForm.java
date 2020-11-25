@@ -2,10 +2,11 @@ package ru.cubos;
 
 import jssc.SerialPortException;
 import jssc.SerialPortList;
+import ru.cubos.Comanders.Commander;
+import ru.cubos.Comanders.GRBL_commander;
 import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
-import ru.cubos.customViews.Status;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -51,13 +52,11 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JButton pauseButton;
     private JButton stopButton;
     private JButton runButton;
-    private JSpinner spinner3;
+    private JSpinner sunSinceCommand;
     private JSlider slider1;
     private JSpinner laserWidth;
     private JSpinner laser_travelSpeed_input;
     private JSpinner laser_burnSpeed_input;
-    private JSpinner spinner7;
-    private JSpinner spinner8;
     private JScrollPane ImageFormPanelWrapper;
     private JSplitPane menuSplit;
     private JSplitPane splitTerminalImage;
@@ -72,7 +71,10 @@ public class MainForm extends JFrame implements SerialPortReader {
     private JLabel laserPower_percent_label;
     private JLabel LaserStatusLabel;
     private JButton RecalculateKobButton;
-    private JSpinner spinner1;
+    private JSpinner pixelSizeInput;
+    private JLabel spindle_position_x;
+    private JLabel spindle_position_y;
+    private JLabel spindle_position_z;
 
     private static int SEND_LASER_POWER_DELAY_MS = 300;
     private SerialConnector serialConnector;
@@ -82,11 +84,13 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     private Settings settings;
     private Status status;
+    private Commander commander;
 
     public MainForm(){
 
         settings = new Settings();
         status = new Status();
+        commander = new GRBL_commander();
 
         setContentPane(mainpanel);
         setTitle("Laser G-code sender");
@@ -243,7 +247,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
-    int menuSplitDividerLocatiom = 380;
+    int menuSplitDividerLocatiom = 420;
     int imageSplitTerminalLocatiom = 240;
 
     void resizeSplitMenu(){
@@ -290,7 +294,64 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     int form_width_last = 0;
     int form_height_last = 0;
+
+    class MovingStepSpinnerModel extends SpinnerNumberModel{
+        public MovingStepSpinnerModel(Number value, Comparable<?> minimum, Comparable<?> maximum, Number stepSize) {
+            super(value, minimum, maximum, stepSize);
+        }
+
+        @Override
+        public Object getNextValue() {
+            double thisValue = Common.hardParseDouble(this.getValue().toString());
+            if (thisValue < 0.1){
+                this.setStepSize(0.01);
+            }else if (thisValue < 1){
+                this.setStepSize(0.1);
+            }else if (thisValue < 10){
+                this.setStepSize(1);
+            }else if (thisValue < 100){
+                this.setStepSize(10);
+            }else if (thisValue < 1000){
+                this.setStepSize(100);
+            }else{
+                this.setStepSize(1);
+            }
+
+            return super.getNextValue();
+        }
+
+        @Override
+        public Object getPreviousValue(){
+            double thisValue = Common.hardParseDouble(this.getValue().toString());
+            if (thisValue <= 0.1){
+                this.setStepSize(0.01);
+            }else if (thisValue <= 1){
+                this.setStepSize(0.1);
+            }else if (thisValue <= 10){
+                this.setStepSize(1);
+            }else if (thisValue <= 100){
+                this.setStepSize(10);
+            }else if (thisValue <= 1000){
+                this.setStepSize(100);
+            }else{
+                this.setStepSize(1);
+            }
+
+            return super.getPreviousValue();
+        }
+    }
+
     private void createUIComponents() {
+
+        pixelSizeInput              = new JSpinner(new SpinnerNumberModel(100.0, 0.0, 1000.0, 0.1));
+        laser_burnSpeed_input       = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+        laser_travelSpeed_input     = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+        sunSinceCommand             = new JSpinner(new SpinnerNumberModel(0, 0, null, 1));
+        laserWidth                  = new JSpinner(new SpinnerNumberModel(0.0, 0.0, 2.0, 0.01));
+        LaserMinPower_input         = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+        LaserMaxPower_input         = new JSpinner(new SpinnerNumberModel(0, 0, 100000, 1));
+        Zstep_val                   = new JSpinner(new MovingStepSpinnerModel(5.0, 0.0, 10000.0, 0.01));
+        XYstep_val                  = new JSpinner(new MovingStepSpinnerModel(20.0, 0.0, 10000.0, 0.01));
 
         splitTerminalImage = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
@@ -302,6 +363,7 @@ public class MainForm extends JFrame implements SerialPortReader {
                 form_height_last = form_height;
             }
         };
+
         menuSplit = new CustomJSplitPane() {
             public void onDeviderMove(int deviderLocation){
                 int form_width = MainForm.this.getWidth();
@@ -403,7 +465,8 @@ public class MainForm extends JFrame implements SerialPortReader {
         laser_travelSpeed_input.addChangeListener(changeListener);
         Zstep_val.addChangeListener(changeListener);
         XYstep_val.addChangeListener(changeListener);
-        laser_burnSpeed_input.addChangeListener(changeListener);;
+        laser_burnSpeed_input.addChangeListener(changeListener);
+        pixelSizeInput.addChangeListener(changeListener);
 
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # Serial port connect listener
@@ -433,7 +496,7 @@ public class MainForm extends JFrame implements SerialPortReader {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 status.setLaserOn(false);
-                sendCommand("M3 S0");
+                prepareCommand(commander.getSpindlePowerCommand(0));
                 setCurrentLaserPower();
             }
         });
@@ -444,42 +507,43 @@ public class MainForm extends JFrame implements SerialPortReader {
         xPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 X" + xy_step_moving + " F10000");
+                spindelTravel(status.getManual_stepmoving_xy(), 0,0, status.getManual_stepmoving_xy());
+
             }
         });
 
         xMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 X-" + xy_step_moving + " F10000");
+                spindelTravel(-status.getManual_stepmoving_xy(), 0,0, status.getManual_stepmoving_xy());
             }
         });
 
         yPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 Y" + xy_step_moving + " F10000");
+                spindelTravel(0, status.getManual_stepmoving_xy(),0, status.getManual_stepmoving_xy());
             }
         });
 
         yMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 Y-" + xy_step_moving + " F10000");
+                spindelTravel(0, -status.getManual_stepmoving_xy(),0, status.getManual_stepmoving_xy());
             }
         });
 
         zPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 Z" + z_step_moving + " F10000");
+                spindelTravel(0, 0,status.getManual_stepmoving_z(), status.getManual_stepmoving_z());
             }
         });
 
         zMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G1 Z-" + z_step_moving + " F10000");
+                spindelTravel(0, 0,-status.getManual_stepmoving_z(), status.getManual_stepmoving_z());
             }
         });
 
@@ -497,10 +561,11 @@ public class MainForm extends JFrame implements SerialPortReader {
             }
         });
 
+        calibrationButton.setVisible(false);
         calibrationButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand("G28");
+                //prepareCommand("G28");
             }
         });
 
@@ -565,19 +630,19 @@ public class MainForm extends JFrame implements SerialPortReader {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
-    private double x_laser_position = 0;
-    private double y_laser_position = 0;
-    private double z_laser_position = 0;
-
-    private double xy_step_moving = 20;
-    private double z_step_moving = 5;
-
-    private void moveFromSpindlePosition(double x, double y, double z){
-
+    private void updateSpindlePosition(){
+        spindle_position_x.setText("" + status.x);
+        spindle_position_y.setText("" + status.y);
+        spindle_position_z.setText("" + status.z);
     }
 
-    private void moveSpindleAbsolute(double x, double y, double z){
+    private void spindelTravel(double dx, double dy, double dz, double speed){
+        status.x += dx;
+        status.y += dy;
+        status.z += dz;
 
+        updateSpindlePosition();
+        prepareCommand(commander.getTravelCommand(dx, dy, dz, speed));
     }
 
     /*
@@ -661,6 +726,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     }
 
     private void prepareCommand(String command){
+        System.out.println("Command to prepare " + command);
         globalCommandsList.add(command);
     }
 
@@ -679,10 +745,10 @@ public class MainForm extends JFrame implements SerialPortReader {
         laserPower_percent_label.setText("" + status.getCurrentLaserPowerAbsolute(settings));
 
         if(status.getCurrentLaserPowerAbsolute(settings)==0){
-            if(status.isLaserOn()) sendCommand("M3 S0");
+            if(status.isLaserOn()) prepareCommand(commander.getSpindlePowerCommand(0));
             LaserStatusLabel.setText("OFF");
         }else{
-            sendCommand("M3 S" + status.getCurrentLaserPowerAbsolute(settings));
+            prepareCommand(commander.getSpindlePowerCommand(status.getCurrentLaserPowerAbsolute(settings)));
             LaserStatusLabel.setText("ON");
         }
     }
@@ -699,8 +765,8 @@ public class MainForm extends JFrame implements SerialPortReader {
     */
 
     private void loadFromSettings(Settings settings){
-        XYstep_val.setValue(settings.MANUAL_MOVE_XY_STEP);
-        Zstep_val.setValue(settings.MANUAL_MOVE_Z_STEP);
+        XYstep_val.setValue(settings.MANUAL_MOVE_XY_STEP_INIT);
+        Zstep_val.setValue(settings.MANUAL_MOVE_Z_STEP_INIT);
 
         laserWidth.setValue(settings.LASER_WIDTH);
         LaserMaxPower_input.setValue(settings.LASER_MAX_POWER);
@@ -708,11 +774,13 @@ public class MainForm extends JFrame implements SerialPortReader {
 
         laser_travelSpeed_input.setValue(settings.TRAVEL_SPEED);
         laser_burnSpeed_input.setValue(settings.BURN_SPEED);
+
+        pixelSizeInput.setValue(settings.PIXEL_SIZE);
     }
 
     private void saveToSettings(Settings settings){
-        settings.MANUAL_MOVE_XY_STEP = Common.hardParseDouble(XYstep_val.getValue().toString());
-        settings.MANUAL_MOVE_Z_STEP = Common.hardParseDouble(Zstep_val.getValue().toString());
+        settings.MANUAL_MOVE_XY_STEP_INIT = Common.hardParseDouble(XYstep_val.getValue().toString());
+        settings.MANUAL_MOVE_Z_STEP_INIT = Common.hardParseDouble(Zstep_val.getValue().toString());
 
         settings.LASER_WIDTH = Common.hardParseDouble(laserWidth.getValue().toString());
         settings.LASER_MAX_POWER = Common.hardParseInt(LaserMaxPower_input.getValue().toString());
@@ -720,6 +788,8 @@ public class MainForm extends JFrame implements SerialPortReader {
 
         settings.TRAVEL_SPEED = Common.hardParseInt(laser_travelSpeed_input.getValue().toString());
         settings.BURN_SPEED = Common.hardParseInt(laser_burnSpeed_input.getValue().toString());
+
+        settings.PIXEL_SIZE = Common.hardParseDouble(pixelSizeInput.getValue().toString());
 
         //setCurrentLaserPower();
     }
