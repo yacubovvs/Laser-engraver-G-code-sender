@@ -6,21 +6,20 @@ import ru.cubos.customViews.images.BinaryImage_color;
 
 import java.awt.image.BufferedImage;
 
-public abstract class jobSlicer {
+public abstract class JobSlicer {
 
     BinaryImage_color image;
     Settings settings;
     Status status;
 
-    public jobSlicer(Settings settings, Status status, BufferedImage bufferedImage){
+    public JobSlicer(Settings settings, Status status, BufferedImage bufferedImage){
         this.image      = new BinaryImage_color(bufferedImage);
         this.settings   = settings;
         this.status     = status;
+        slice();
     }
 
-    public void slice(){
-
-    }
+    public abstract void slice();
 
 
 }

@@ -8,13 +8,11 @@ public class ImagePanel extends JPanel {
     private BufferedImage image;
     private JPanel imageWrapper;
 
-    public void loadImage(BufferedImage image){
-        setLayout(new BorderLayout());
-        setImage(image);
-    }
-
     public void setImage(BufferedImage image) {
         this.image = image;
+    }
+    public BufferedImage getImage() {
+        return this.image;
     }
 
     public void paintComponent(Graphics g) {

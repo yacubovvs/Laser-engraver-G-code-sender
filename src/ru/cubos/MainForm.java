@@ -7,6 +7,8 @@ import ru.cubos.Comanders.GRBL_commander;
 import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
+import ru.cubos.jobSlicers.JobSlicer;
+import ru.cubos.jobSlicers.LinearJobSlicer;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -85,6 +87,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     private Settings settings;
     private Status status;
     private Commander commander;
+    private JobSlicer jobSlicer;
 
     public MainForm(){
 
@@ -284,6 +287,7 @@ public class MainForm extends JFrame implements SerialPortReader {
                 try {
                     ((ImagePanel)formImagePanel).setImage(chooseImage());
                     MainForm.this.repaint();
+                    recalculateJob();
                 }catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -381,6 +385,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         try {
             BufferedImage image = ImageIO.read(img );
             ((ImagePanel)formImagePanel).setImage(image);
+            recalculateJob();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -471,6 +476,7 @@ public class MainForm extends JFrame implements SerialPortReader {
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # Serial port connect listener
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
         connectButton.addActionListener(actionEvent -> {
             if(serialConnector==null) {
                 String serialPortName = comboBoxComPorts.getSelectedItem().toString(); //"/dev/ttyUSB0";
@@ -498,6 +504,17 @@ public class MainForm extends JFrame implements SerialPortReader {
                 status.setLaserOn(false);
                 prepareCommand(commander.getSpindlePowerCommand(0));
                 setCurrentLaserPower();
+            }
+        });
+
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        // # MOVING BUTTON LISTENERS
+        // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+        RecalculateKobButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                recalculateJob();
             }
         });
 
@@ -621,6 +638,23 @@ public class MainForm extends JFrame implements SerialPortReader {
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #                                        FORM EVENTS AND ACTIONS -                                          #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                  JOB +                                                    #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    */
+
+    private void recalculateJob(){
+        jobSlicer = new LinearJobSlicer(settings, status, ((ImagePanel)formImagePanel).getImage());
+    }
+
+
+    /*
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    #                                                  JOB +                                                    #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 

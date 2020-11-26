@@ -61,6 +61,19 @@ public class BinaryImage_color extends BinaryImage {
         return binaryImage_color;
     }
 
+    public byte[] getColorPixel(int x, int y){
+        return getColorPixel((char) x, (char) y);
+    }
+
+    public boolean IsBlackPixel(int x, int y){
+        byte[] rgb = this.getColorPixel(x,y);
+        if(rgb[0]<-96 && rgb[1]<-96 && rgb[2]<-96){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     @Override
     public byte[] getColorPixel(char x, char y){
         int position = (x + (getWidth())*y)*3;
