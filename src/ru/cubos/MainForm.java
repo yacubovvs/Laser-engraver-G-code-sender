@@ -7,6 +7,7 @@ import ru.cubos.Comanders.GRBL_commander;
 import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
+import ru.cubos.jobSlicers.JobElements.JobElement;
 import ru.cubos.jobSlicers.JobSlicer;
 import ru.cubos.jobSlicers.LinearJobSlicer;
 
@@ -26,7 +27,7 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 
-public class MainForm extends JFrame implements SerialPortReader {
+public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     private JPanel mainpanel;
     private JButton yPlusButton;
     private JButton yMinusButton;
@@ -298,6 +299,11 @@ public class MainForm extends JFrame implements SerialPortReader {
 
     int form_width_last = 0;
     int form_height_last = 0;
+
+    @Override
+    public void onSliceCompleted(ArrayList<JobElement> commmands) {
+        return;
+    }
 
     class MovingStepSpinnerModel extends SpinnerNumberModel{
         public MovingStepSpinnerModel(Number value, Comparable<?> minimum, Comparable<?> maximum, Number stepSize) {
@@ -648,7 +654,7 @@ public class MainForm extends JFrame implements SerialPortReader {
     */
 
     private void recalculateJob(){
-        jobSlicer = new LinearJobSlicer(settings, status, ((ImagePanel)formImagePanel).getImage());
+        jobSlicer = new LinearJobSlicer(settings, status, ((ImagePanel)formImagePanel).getImage(), this);
     }
 
 

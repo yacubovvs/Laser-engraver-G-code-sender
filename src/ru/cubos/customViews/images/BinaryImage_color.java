@@ -52,6 +52,7 @@ public class BinaryImage_color extends BinaryImage {
         binaryImage_color.data = new byte[data.length];
 
         System.arraycopy(data, 0, binaryImage_color.data, 0, data.length);
+
         /*
         for(int i=0; i<data.length; i++){
             binaryImage_color.data[i] = data[i];
