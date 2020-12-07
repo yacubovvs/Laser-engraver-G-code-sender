@@ -9,8 +9,8 @@ public class Settings{
     public int LASER_MIN_POWER = 0;
     public double LASER_WIDTH = 0.1;
 
-    public int TRAVEL_SPEED = 100;
-    public int BURN_SPEED = 50;
+    public int TRAVEL_SPEED = 1000;
+    public int BURN_SPEED = 500;
 
     public double PIXEL_SIZE = 100.0;
 

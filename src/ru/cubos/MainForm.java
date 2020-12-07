@@ -80,6 +80,10 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     private JLabel spindle_position_z;
 
     private static int SEND_LASER_POWER_DELAY_MS = 300;
+
+    int menuSplitDividerLocatiom = 460;
+    int imageSplitTerminalLocatiom = 240;
+
     private SerialConnector serialConnector;
 
     private List<String> commandHistoryList = new ArrayList();
@@ -251,8 +255,6 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
-    int menuSplitDividerLocatiom = 420;
-    int imageSplitTerminalLocatiom = 240;
 
     void resizeSplitMenu(){
         menuSplit.setDividerLocation(MainForm.this.getWidth() - menuSplitDividerLocatiom);
@@ -527,10 +529,49 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # MOVING BUTTON LISTENERS
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+        resetHomeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommand("G92 X0 Y0 Z0");
+                status.x = 0;
+                status.y = 0;
+                status.z = 0;
+                updateSpindlePosition();
+            }
+        });
+
+        resetXYButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommand("G92 X0 Y0");
+                status.x = 0;
+                status.y = 0;
+                updateSpindlePosition();
+            }
+        });
+
+        resetZButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                prepareCommand("G92 Z0");
+                status.z = 0;
+                updateSpindlePosition();
+            }
+        });
+
+        toHomeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                resetPositions();
+                prepareCommand(commander.getTravelCommand(0, 0, 0, settings.TRAVEL_SPEED));
+            }
+        });
+
         xPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(status.getManual_stepmoving_xy(), 0,0, status.getManual_stepmoving_xy());
+                spindelTravel(status.getManual_stepmoving_xy(), 0,0, settings.TRAVEL_SPEED);
 
             }
         });
@@ -538,35 +579,35 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         xMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(-status.getManual_stepmoving_xy(), 0,0, status.getManual_stepmoving_xy());
+                spindelTravel(-status.getManual_stepmoving_xy(), 0,0, settings.TRAVEL_SPEED);
             }
         });
 
         yPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(0, status.getManual_stepmoving_xy(),0, status.getManual_stepmoving_xy());
+                spindelTravel(0, status.getManual_stepmoving_xy(),0, settings.TRAVEL_SPEED);
             }
         });
 
         yMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(0, -status.getManual_stepmoving_xy(),0, status.getManual_stepmoving_xy());
+                spindelTravel(0, -status.getManual_stepmoving_xy(),0, settings.TRAVEL_SPEED);
             }
         });
 
         zPlusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(0, 0,status.getManual_stepmoving_z(), status.getManual_stepmoving_z());
+                spindelTravel(0, 0,status.getManual_stepmoving_z(), settings.TRAVEL_SPEED);
             }
         });
 
         zMinusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                spindelTravel(0, 0,-status.getManual_stepmoving_z(), status.getManual_stepmoving_z());
+                spindelTravel(0, 0,-status.getManual_stepmoving_z(), settings.TRAVEL_SPEED);
             }
         });
 
@@ -595,7 +636,8 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         reinitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                sendCommand("G91");
+                sendCommand("G21");
+                prepareCommand("G92 X0 Y0 Z0");
             }
         });
 
@@ -670,10 +712,17 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     */
 
+    private void resetPositions() {
+        status.z = 0;
+        status.x = 0;
+        status.y = 0;
+        updateSpindlePosition();
+    }
+
     private void updateSpindlePosition(){
-        spindle_position_x.setText("" + status.x);
-        spindle_position_y.setText("" + status.y);
-        spindle_position_z.setText("" + status.z);
+        spindle_position_x.setText("X: " + status.x + " mm");
+        spindle_position_y.setText("Y: " + status.y + " mm");
+        spindle_position_z.setText("Z: " + status.z + " mm");
     }
 
     private void spindelTravel(double dx, double dy, double dz, double speed){
@@ -682,7 +731,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         status.z += dz;
 
         updateSpindlePosition();
-        prepareCommand(commander.getTravelCommand(dx, dy, dz, speed));
+        prepareCommand(commander.getTravelCommand(status.x, status.y, status.z, speed));
     }
 
     /*
@@ -745,9 +794,24 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
                             lastSerialAnswer = null;
                             sendCommand(globalCommandsList.get(0));
                             globalCommandsList.remove(0);
-                        }else{
                         }
                     }
+
+                    if(lastSerialAnswer!=null && lastSerialAnswer.trim().equals("Grbl 1.1f ['$' for help]")){
+                        lastSerialAnswer = null;
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        globalCommandsList.clear();
+                        resetPositions();
+                        sendCommand("G21");
+                        prepareCommand("G92 X0 Y0 Z0");
+
+
+                    }
+
 
                     try {
                         Thread.sleep(200);
