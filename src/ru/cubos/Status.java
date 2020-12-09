@@ -26,8 +26,12 @@ public class Status {
     }
 
     public int getCurrentLaserPowerAbsolute(Settings settings) {
-        if(laserOn) return settings.LASER_MIN_POWER + laserPower*(settings.LASER_MAX_POWER - settings.LASER_MIN_POWER)/100;
+        if(laserOn) return getLaserPowerSettings(settings);
         else return 0;
+    }
+
+    public int getLaserPowerSettings(Settings settings) {
+        return settings.LASER_MIN_POWER + laserPower*(settings.LASER_MAX_POWER - settings.LASER_MIN_POWER)/100;
     }
 
     public void setLaserPower(int laserPower) {

@@ -64,7 +64,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     private JSplitPane menuSplit;
     private JSplitPane splitTerminalImage;
     private JComboBox comboBoxBoundrate;
-    private JButton steppersOffButton;
+    private JButton testbtn;
     private JButton resetXYButton;
     private JButton resetZButton;
     private JButton reinitButton;
@@ -641,6 +641,17 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             }
         });
 
+
+        testbtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+
+                prepareCommand(commander.getSpindlePowerCommand(status.getLaserPowerSettings(settings)));
+                prepareCommand("G0 X20 Y0 Z0");
+                prepareCommand(commander.getSpindlePowerCommand(0));
+                prepareCommand("G0 X0 Y0 Z0");
+            }
+        });
 
         // # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         // # TERMINAL LISTENERS
