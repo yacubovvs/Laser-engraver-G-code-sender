@@ -7,7 +7,6 @@ import ru.cubos.Comanders.GRBL_commander;
 import ru.cubos.customViews.CustomJSplitPane;
 import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
-import ru.cubos.jobSlicers.JobElements.JobElement;
 import ru.cubos.jobSlicers.JobSlicer;
 import ru.cubos.jobSlicers.LinearJobSlicer;
 
@@ -78,6 +77,8 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     private JLabel spindle_position_x;
     private JLabel spindle_position_y;
     private JLabel spindle_position_z;
+    private JLabel imageRealWidth;
+    private JLabel imageRealHeight;
 
     private static int SEND_LASER_POWER_DELAY_MS = 300;
 
@@ -116,6 +117,8 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         setFormStyle();
 
         setFormEvents();
+
+        recalculateJob();
         setVisible(true);
     }
 
@@ -289,6 +292,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             public void actionPerformed(ActionEvent arg0) {
                 try {
                     ((ImagePanel)formImagePanel).setImage(chooseImage());
+                    updateImageRealWidth();
                     MainForm.this.repaint();
                     recalculateJob();
                 }catch (IOException e) {
@@ -302,9 +306,12 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     int form_width_last = 0;
     int form_height_last = 0;
 
+
+
+    ArrayList<String> jobCommmandsList;
     @Override
-    public void onSliceCompleted(ArrayList<JobElement> commmands) {
-        return;
+    public void onSliceCompleted(ArrayList<String> commmands) {
+        jobCommmandsList = commmands;
     }
 
     class MovingStepSpinnerModel extends SpinnerNumberModel{
@@ -393,7 +400,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         try {
             BufferedImage image = ImageIO.read(img );
             ((ImagePanel)formImagePanel).setImage(image);
-            recalculateJob();
+            //updateImageRealWidth();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -468,6 +475,8 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             @Override
             public void stateChanged(ChangeEvent changeEvent) {
                 saveToSettings(settings);
+                saveToStatusFromForm(status);
+                updateImageRealWidth();
             }
         };
 
@@ -641,11 +650,27 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             }
         });
 
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if(jobCommmandsList!=null) {
+                    for (String command : MainForm.this.jobCommmandsList) {
+                        prepareCommand(command);
+                    }
+                }
+            }
+        });
+
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                globalCommandsList.clear();
+            }
+        });
 
         testbtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
                 prepareCommand(commander.getSpindlePowerCommand(status.getLaserPowerSettings(settings)));
                 prepareCommand("G0 X20 Y0 Z0");
                 prepareCommand(commander.getSpindlePowerCommand(0));
@@ -694,6 +719,14 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         });
     }
 
+    private void updateImageRealWidth(){
+        BufferedImage image = ((ImagePanel)formImagePanel).getImage();
+        if(image!=null) {
+            imageRealWidth.setText("" + (double) (image.getWidth()/settings.PIXELS_IN_MM));
+            imageRealHeight.setText("" + (double) (image.getHeight()/settings.PIXELS_IN_MM));
+        }
+    }
+
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #                                        FORM EVENTS AND ACTIONS -                                          #
@@ -707,9 +740,13 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     */
 
     private void recalculateJob(){
-        jobSlicer = new LinearJobSlicer(settings, status, ((ImagePanel)formImagePanel).getImage(), this);
+        jobSlicer = new LinearJobSlicer(settings, status, commander, ((ImagePanel)formImagePanel).getImage(), this);
     }
 
+    private void saveToStatusFromForm(Status status) {
+        status.setManual_stepmoving_xy(settings.MANUAL_MOVE_XY_STEP_INIT);
+        status.setManual_stepmoving_z(settings.MANUAL_MOVE_Z_STEP_INIT);
+    }
 
     /*
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -890,7 +927,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         laser_travelSpeed_input.setValue(settings.TRAVEL_SPEED);
         laser_burnSpeed_input.setValue(settings.BURN_SPEED);
 
-        pixelSizeInput.setValue(settings.PIXEL_SIZE);
+        pixelSizeInput.setValue(settings.PIXELS_IN_MM);
     }
 
     private void saveToSettings(Settings settings){
@@ -904,7 +941,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         settings.TRAVEL_SPEED = Common.hardParseInt(laser_travelSpeed_input.getValue().toString());
         settings.BURN_SPEED = Common.hardParseInt(laser_burnSpeed_input.getValue().toString());
 
-        settings.PIXEL_SIZE = Common.hardParseDouble(pixelSizeInput.getValue().toString());
+        settings.PIXELS_IN_MM = Common.hardParseDouble(pixelSizeInput.getValue().toString());
 
         //setCurrentLaserPower();
     }

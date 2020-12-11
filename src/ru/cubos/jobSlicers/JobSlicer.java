@@ -1,5 +1,6 @@
 package ru.cubos.jobSlicers;
 
+import ru.cubos.Comanders.Commander;
 import ru.cubos.Settings;
 import ru.cubos.SlicerCaller;
 import ru.cubos.Status;
@@ -13,17 +14,20 @@ import java.util.ArrayList;
 public abstract class JobSlicer {
 
     ArrayList<JobElement> commmands = new ArrayList<>();
+    ArrayList<String> stringCommmands = new ArrayList<>();
 
     BinaryImage_color image;
     Settings settings;
     Status status;
     SlicerCaller slicerCaller;
+    Commander commander;
 
-    public JobSlicer(Settings settings, Status status, BufferedImage bufferedImage, SlicerCaller slicerCaller){
+    public JobSlicer(Settings settings, Status status, Commander commander, BufferedImage bufferedImage, SlicerCaller slicerCaller){
         this.image          = new BinaryImage_color(bufferedImage);
         this.settings       = settings;
         this.status         = status;
         this.slicerCaller   = slicerCaller;
+        this.commander      = commander;
         slice();
     }
 
