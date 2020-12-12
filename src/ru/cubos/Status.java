@@ -11,7 +11,7 @@ public class Status {
     private double manual_stepmoving_z = 5;
 
     private boolean laserOn = false;
-    private int laserPower = 0;
+    private int laserPower = 600;
 
     public boolean isLaserOn() {
         return laserOn;

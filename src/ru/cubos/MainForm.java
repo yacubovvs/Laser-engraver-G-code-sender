@@ -519,7 +519,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 status.setLaserOn(false);
-                prepareCommand(commander.getSpindlePowerCommand(0));
+                prepareCommand(commander.getSpindlePowerCommand("0"));
                 setCurrentLaserPower();
             }
         });
@@ -573,7 +573,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 resetPositions();
-                prepareCommand(commander.getTravelCommand(0, 0, 0, settings.TRAVEL_SPEED));
+                prepareCommand(commander.getTravelCommand(0, 0, 0, "" + settings.TRAVEL_SPEED));
             }
         });
 
@@ -671,9 +671,9 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         testbtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                prepareCommand(commander.getSpindlePowerCommand(status.getLaserPowerSettings(settings)));
+                prepareCommand(commander.getSpindlePowerCommand("" + status.getLaserPowerSettings(settings)));
                 prepareCommand("G0 X20 Y0 Z0");
-                prepareCommand(commander.getSpindlePowerCommand(0));
+                prepareCommand(commander.getSpindlePowerCommand("0"));
                 prepareCommand("G0 X0 Y0 Z0");
             }
         });
@@ -779,7 +779,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         status.z += dz;
 
         updateSpindlePosition();
-        prepareCommand(commander.getTravelCommand(status.x, status.y, status.z, speed));
+        prepareCommand(commander.getTravelCommand(status.x, status.y, status.z, "" + speed));
     }
 
     /*
@@ -820,8 +820,8 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         try{
             serialConnector.sendToPort(command);
         }catch(Exception e){
-            printToConsoleString("--- ERROR: sending command error");
-            if(serialConnector==null) printToConsoleString("--- serial port is not connected");
+            printToConsoleString("-- ERROR: sending command error");
+            if(serialConnector==null) printToConsoleString("-- serial port is not connected");
 
         }
 
@@ -883,6 +883,9 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     }
 
     void sendCommand(String command){
+        command = command.replaceAll("---LASER_POWER_BURN---", "" + status.getLaserPowerSettings(settings));
+        command = command.replaceAll("---TRAVEL_SPEED---", "" + settings.TRAVEL_SPEED);
+        command = command.replaceAll("---BURN_SPEED---", "" + settings.BURN_SPEED);
         printToConsoleString(command);
         if(serialConnector==null){
             printToConsoleString("-- Error: Serial port disconnected");
@@ -897,10 +900,10 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
         laserPower_percent_label.setText("" + status.getCurrentLaserPowerAbsolute(settings));
 
         if(status.getCurrentLaserPowerAbsolute(settings)==0){
-            if(status.isLaserOn()) prepareCommand(commander.getSpindlePowerCommand(0));
+            if(status.isLaserOn()) prepareCommand(commander.getSpindlePowerCommand("0"));
             LaserStatusLabel.setText("OFF");
         }else{
-            prepareCommand(commander.getSpindlePowerCommand(status.getCurrentLaserPowerAbsolute(settings)));
+            prepareCommand(commander.getSpindlePowerCommand("" + status.getCurrentLaserPowerAbsolute(settings)));
             LaserStatusLabel.setText("ON");
         }
     }

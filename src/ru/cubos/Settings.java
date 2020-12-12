@@ -7,14 +7,18 @@ public class Settings{
 
     public int LASER_MAX_POWER = 1024;
     public int LASER_MIN_POWER = 0;
-    public double LASER_WIDTH = 1;
+    public double LASER_WIDTH = 0.3;
 
-    public int TRAVEL_SPEED = 1000;
-    public int BURN_SPEED = 500;
+    public int TRAVEL_SPEED = 10000;
+    public int BURN_SPEED = 5000;
 
-    public double PIXELS_IN_MM = 1.0;
+    public double PIXELS_IN_MM = 9.5;
 
     public double getLinesInPixel(){
-        return this.PIXELS_IN_MM/this.LASER_WIDTH;
+        double lines = this.LASER_WIDTH/this.PIXELS_IN_MM;
+        if(lines<1) return 1;
+        else{
+            return (int)lines;
+        }
     }
 }

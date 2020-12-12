@@ -66,11 +66,16 @@ public class LinearJobSlicer extends JobSlicer {
                         coordinate1 = jobElement.coordinates.get(1);
                     }
 
-                    this.stringCommmands.add(commander.getSpindlePowerCommand(0));
-                    this.stringCommmands.add(commander.getTravelCommand(coordinate1.getX()+1, coordinate1.getY() + (1/linesInPixel)*line, 0, settings.BURN_SPEED));
-                    this.stringCommmands.add(commander.getSpindlePowerCommand(status.getLaserPowerSettings(settings)));
-                    this.stringCommmands.add(commander.getTravelCommand(coordinate2.getX()+1, coordinate2.getY() + (1/linesInPixel)*line, 0, settings.BURN_SPEED));
-                    this.stringCommmands.add(commander.getSpindlePowerCommand(0));
+                    double x1 = coordinate1.getX()/settings.PIXELS_IN_MM;
+                    double y1 = coordinate1.getY()/settings.PIXELS_IN_MM;
+                    double x2 = (coordinate2.getX()+1)/settings.PIXELS_IN_MM;
+                    double y2 = coordinate2.getY()/settings.PIXELS_IN_MM;
+
+                    this.stringCommmands.add(commander.getSpindlePowerCommand("0"));
+                    this.stringCommmands.add(commander.getTravelCommand(x1, y1 + (1/linesInPixel)*line, 0, "---TRAVEL_SPEED---"));
+                    this.stringCommmands.add(commander.getSpindlePowerCommand("---LASER_POWER_BURN---")); // status.getLaserPowerSettings(settings)
+                    this.stringCommmands.add(commander.getTravelCommand(x2, y2 + (1/linesInPixel)*line, 0, "---BURN_SPEED---"));
+                    this.stringCommmands.add(commander.getSpindlePowerCommand("0"));
                 }
 
 
