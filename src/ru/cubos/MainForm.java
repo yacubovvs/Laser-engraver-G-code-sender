@@ -396,7 +396,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
 
         formImagePanel = new ImagePanel();
 
-        File img = new File("images/test_pcb.png");
+        File img = new File("images/AGG_BOT_10.png");
         try {
             BufferedImage image = ImageIO.read(img );
             ((ImagePanel)formImagePanel).setImage(image);
