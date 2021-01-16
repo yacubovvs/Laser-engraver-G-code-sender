@@ -9,6 +9,7 @@ import ru.cubos.customViews.ImagePanel;
 import ru.cubos.customViews.SerialPortReader;
 import ru.cubos.jobSlicers.JobSlicer;
 import ru.cubos.jobSlicers.LinearJobSlicer;
+import ru.cubos.jobSlicers.LinearToAndBackJobSlicer;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -195,7 +196,13 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
     */
 
     public void printToConsoleString(String string){
-        ConsoleField.setText(ConsoleField.getText() + string + "\n");
+        String fullText = ConsoleField.getText();
+        if(fullText.length()>1024*16){
+            fullText = fullText.substring(fullText.length()-1024*16, fullText.length());
+        }
+        ConsoleField.setText(fullText + string + "\n");
+
+
     }
 
     private void addCommandToCommandHistory(String command) {
@@ -396,7 +403,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
 
         formImagePanel = new ImagePanel();
 
-        File img = new File("images/AGG_BOT_10.png");
+        File img = new File("images/AGG_TOP_5.png");
         try {
             BufferedImage image = ImageIO.read(img );
             ((ImagePanel)formImagePanel).setImage(image);
@@ -741,6 +748,7 @@ public class MainForm extends JFrame implements SerialPortReader, SlicerCaller {
 
     private void recalculateJob(){
         jobSlicer = new LinearJobSlicer(settings, status, commander, ((ImagePanel)formImagePanel).getImage(), this);
+        //jobSlicer = new LinearToAndBackJobSlicer(settings, status, commander, ((ImagePanel)formImagePanel).getImage(), this);
     }
 
     private void saveToStatusFromForm(Status status) {

@@ -10,9 +10,9 @@ public class Settings{
     public double LASER_WIDTH = 0.25;
 
     public int TRAVEL_SPEED = 10000;
-    public int BURN_SPEED = 5000;
+    public int BURN_SPEED = 2000;
 
-    public double PIXELS_IN_MM = 10;
+    public double PIXELS_IN_MM = 5;
 
     public double getLinesInPixel(){
         double lines = this.LASER_WIDTH/this.PIXELS_IN_MM;
